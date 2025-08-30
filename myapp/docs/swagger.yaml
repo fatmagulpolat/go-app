@@ -1,0 +1,117 @@
+definitions:
+  request.UserCreateRequest:
+    properties:
+      age:
+        type: integer
+      email:
+        type: string
+      firstName:
+        type: string
+      lastName:
+        type: string
+    required:
+    - age
+    - email
+    - firstName
+    - lastName
+    type: object
+  response.UserResponse:
+    properties:
+      age:
+        type: integer
+      email:
+        type: string
+      firstName:
+        type: string
+      id:
+        type: string
+      lastName:
+        type: string
+    type: object
+info:
+  contact:
+    name: API Support
+  description: This is a sample swagger for Fiber
+  license:
+    name: Apache 2.0
+  title: go app
+  version: "1.0"
+paths:
+  /api/v1/user:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/response.UserResponse'
+            type: array
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Get all users
+      tags:
+      - User
+    post:
+      consumes:
+      - application/json
+      description: Create a new user with the given information
+      parameters:
+      - description: User create request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: user created successfully
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Create a new user
+      tags:
+      - User
+  /api/v1/user/{userId}:
+    get:
+      consumes:
+      - application/json
+      description: get user by ID
+      parameters:
+      - description: userId
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.UserResponse'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: This method get user by id.
+      tags:
+      - User
+swagger: "2.0"

@@ -30,7 +30,18 @@ func NewUserController(userQueryService query.IUserQueryService,
 	}
 }
 
-// GetById implements IUserController.
+// GetUserById godoc
+// @Summary      This method get user by id.
+// @Description  get user by ID
+// @Tags         User
+// @Accept       json
+// @Produce      json
+// @Param        userId   path      string  true  "userId"
+// @Success      200  {object}  response.UserResponse
+// @Failure      400
+// @Failure      404
+// @Failure      500
+// @Router       /api/v1/user/{userId} [get]
 func (c *userController) GetUserById(ctx *fiber.Ctx) error {
 
 	userId := ctx.Params("userId")
@@ -47,7 +58,16 @@ func (c *userController) GetUserById(ctx *fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(userDto)
 }
 
-// GetUser implements IUserController.
+// GetUser godoc
+// @Summary      Get all users
+// @Description  Retrieve a list of all users
+// @Tags         User
+// @Accept       json
+// @Produce      json
+// @Success      200  {array}   response.UserResponse
+// @Failure      400
+// @Failure      500
+// @Router       /api/v1/user [get]
 func (c *userController) GetUser(ctx *fiber.Ctx) error {
 
 	users, err := c.userQueryService.Get(ctx.UserContext())
@@ -60,6 +80,17 @@ func (c *userController) GetUser(ctx *fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(userDtoList)
 }
 
+// SaveUser godoc
+// @Summary      Create a new user
+// @Description  Create a new user with the given information
+// @Tags         User
+// @Accept       json
+// @Produce      json
+// @Param        request  body      request.UserCreateRequest  true  "User create request"
+// @Success      200      {string}  string  "user created successfully"
+// @Failure      400      {string}  string  "Bad request"
+// @Failure      500      {string}  string  "Internal server error"
+// @Router       /api/v1/user [post]
 func (c *userController) Save(ctx *fiber.Ctx) error {
 
 	var request request.UserCreateRequest

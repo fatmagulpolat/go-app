@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"myapp/configuration"
 	"myapp/internal/my-app-rest-api/application/controller"
 	"myapp/internal/my-app-rest-api/application/handler/user"
 	"myapp/internal/my-app-rest-api/application/pkg/server"
@@ -10,8 +11,11 @@ import (
 	"myapp/internal/my-app-rest-api/application/web"
 	"net/http"
 
+	_ "myapp/docs"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/swagger"
 	"github.com/google/uuid"
 )
 
@@ -52,8 +56,15 @@ func Validate(data interface{}) []CustomValidationError {
 	return customerValidationError
 }
 
+// @title go app
+// @version 1.0
+// @description This is a sample swagger for Fiber
+// @contact.name API Support
+// @license.name Apache 2.0
 func main() {
 	app := fiber.New()
+
+	configureSwaggerUi(app)
 
 	userRepository := repository.NewUserRepository()
 	userQueryService := query.NewUserQueryService(userRepository)
@@ -90,39 +101,15 @@ func main() {
 	validate.RegisterValidation("acceptAge", func(fl validator.FieldLevel) bool {
 		return fl.Field().Int() > 18
 	})
-	/*
 
+}
 
-		app.Post("/user", func(ctx *fiber.Ctx) error {
-			fmt.Println("hellö my first post endpoint")
+func configureSwaggerUi(app *fiber.App) {
+	if configuration.Env != "prod" {
+		app.Get("/swagger/*", swagger.HandlerDefault)
 
-			var request UserCreateRequest
-			err := ctx.BodyParser(&request)
-
-			if err != nil {
-				fmt.Sprintf("error error %v ", err.Error())
-				return err
-			}
-			if errors := Validate(request); errors != nil && errors[0].HasError {
-				var errorResponse ErrorResponse
-				var errorDetails []ErrorResponseDetail
-
-				for _, validationError := range errors {
-					var errorDetail ErrorResponseDetail
-					errorDetail.FieldName = validationError.Field
-					errorDetail.Description = fmt.Sprintf("%s filedhas an error", validationError.Field)
-					errorDetails = append(errorDetails, errorDetail)
-				}
-				errorResponse.Status = http.StatusBadRequest
-				errorResponse.ErrorDetail = errorDetails
-
-				return ctx.Status(http.StatusBadRequest).JSON(errorResponse)
-			}
-
-			responseMessage := fmt.Sprintf("%s created succesfully", request.FirtsName)
-			return ctx.Status(http.StatusOK).JSON(responseMessage)
+		app.Get("/", func(ctx *fiber.Ctx) error {
+			return ctx.Status(fiber.StatusMovedPermanently).Redirect("/swagger/index.html")
 		})
-	*/
-	//app.Listen(":3000")
-
+	}
 }
