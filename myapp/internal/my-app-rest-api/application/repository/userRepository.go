@@ -2,8 +2,15 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"myapp/configuration"
 	"myapp/internal/my-app-rest-api/application/pkg/utils"
 	"myapp/internal/my-app-rest-api/domain"
+	"strings"
+	"time"
+
+	"github.com/couchbase/gocb/v2"
 )
 
 type IUserRepository interface {
@@ -13,35 +20,63 @@ type IUserRepository interface {
 }
 
 type UserRepository struct {
-	userList []*domain.User // class'ın property'si
+	AppCluster    *gocb.Cluster
+	AppUserBucket *gocb.Bucket
+	userList      []*domain.User // class'ın property'si
 }
 
 // func NewUserRepository() IUserRepository ile aslında interface implementasyonu yapılmış oldu
-func NewUserRepository() IUserRepository {
+func NewUserRepository(cluster *gocb.Cluster) IUserRepository {
 	return &UserRepository{
-		userList: utils.GetUserStub(),
+		userList:      utils.GetUserStub(),
+		AppCluster:    cluster,
+		AppUserBucket: cluster.Bucket("user"),
 	}
 }
 
 func (u *UserRepository) GetById(ctx context.Context, id string) (*domain.User, error) {
-	for _, user := range u.userList {
-		if user.Id == id {
-			return user, nil
-		}
+	var user domain.User
+
+	queryResult, err := u.AppUserBucket.DefaultCollection().Get(id, &gocb.GetOptions{Timeout: time.Second * 1})
+	if err != nil {
+		return nil, errors.New("there was an error while getting data by userId")
 	}
-	return nil, nil
+
+	if err = queryResult.Content(&user); err != nil {
+		return nil, errors.New("there was an error while getting data by userId")
+	}
+	return &user, nil
 }
 
 func (u *UserRepository) Get(ctx context.Context) ([]*domain.User, error) {
 
-	users := u.userList
-	if users == nil {
-		return make([]*domain.User, 0), nil
+	queryStr := strings.ReplaceAll("SELECT u.* FROM `{{bucket}}` u", "{{bucket}}", configuration.AppUserBucket)
+	queryResult, err := u.AppCluster.Query(queryStr, &gocb.QueryOptions{
+		Timeout: 10 * time.Millisecond,
+	})
+
+	if err != nil {
+		return nil, err
 	}
-	return u.userList, nil
+
+	var users []*domain.User
+	for queryResult.Next() {
+		var user domain.User
+		queryResult.Row(&user)
+		users = append(users, &user)
+	}
+
+	return users, nil
 }
 
 func (u *UserRepository) Upsert(ctx context.Context, user *domain.User) error {
-	u.userList = append(u.userList, user)
+	_, err := u.AppUserBucket.DefaultCollection().Upsert(user.Id,
+		user,
+		&gocb.UpsertOptions{Context: ctx},
+	)
+	if err != nil {
+		fmt.Printf("userRepository.Upsert ERROR : %#v\n", err.Error())
+		return errors.New("INTERNAL SERVER ERROR")
+	}
 	return nil
 }

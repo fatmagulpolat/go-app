@@ -5,7 +5,9 @@ import (
 	"myapp/configuration"
 	"myapp/internal/my-app-rest-api/application/controller"
 	"myapp/internal/my-app-rest-api/application/handler/user"
+	"myapp/internal/my-app-rest-api/application/pkg/couchbase"
 	"myapp/internal/my-app-rest-api/application/pkg/server"
+	"myapp/internal/my-app-rest-api/application/pkg/utils"
 	"myapp/internal/my-app-rest-api/application/query"
 	"myapp/internal/my-app-rest-api/application/repository"
 	"myapp/internal/my-app-rest-api/application/web"
@@ -66,7 +68,15 @@ func main() {
 
 	configureSwaggerUi(app)
 
-	userRepository := repository.NewUserRepository()
+	byteOperationUtil := utils.NewByteOperationUtil()
+
+	couchbaseCluster := couchbase.ConnectCluster(configuration.CouchbaseHost,
+		configuration.CouchbaseUserName,
+		configuration.CouchbasePassword,
+		byteOperationUtil.MbToBytes(uint(10)),
+	)
+
+	userRepository := repository.NewUserRepository(couchbaseCluster)
 	userQueryService := query.NewUserQueryService(userRepository)
 	userCommandHandler := user.NewCommandHandler(userRepository)
 
